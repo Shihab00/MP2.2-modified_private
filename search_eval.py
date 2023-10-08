@@ -6,7 +6,7 @@ import pytoml
 import numpy as np
 
 
-def load_ranker(cfg_file, i):
+def load_ranker(cfg_file):
     """
     Use this function to return the Ranker object to evaluate, 
     The parameter to this function, cfg_file, is the path to a
