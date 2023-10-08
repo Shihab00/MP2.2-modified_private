@@ -1,43 +1,19 @@
 import math
 import sys
 import time
-
 import metapy
 import pytoml
+import numpy as np
 
-class InL2Ranker(metapy.index.RankingFunction):
-    """
-    Create a new ranking function in Python that can be used in MeTA.
-    """
-    def __init__(self, some_param=1.0):
-        self.param = some_param
-        # You *must* call the base class constructor here!
-        super(InL2Ranker, self).__init__()
 
-    def score_one(self, sd):
-        """
-        You need to override this function to return a score for a single term.
-        For fields available in the score_data sd object,
-        @see https://meta-toolkit.org/doxygen/structmeta_1_1index_1_1score__data.html
-        """
-        # Log2 - math.log(x,2)
-        # N - sd.num_docs
-        # D - sd.doc_size
-        # c(t,Q) - sd.query_term_weight
-        # c(t,C) - sd.corpus_term_count
-        # c(t,D) - sd.doc_term_count
-        tfn = sd.doc_term_count * math.log((1 + (sd.avg_dl / abs(sd.doc_size))),2)
-        return sd.query_term_weight * (tfn / (tfn + self.param)) * math.log(((sd.num_docs + 1) / (sd.corpus_term_count + 0.5)),2)
-
-def load_ranker(cfg_file):
+def load_ranker(cfg_file, i):
     """
-    Use this function to return the Ranker object to evaluate, e.g. return InL2Ranker(some_param=1.0) 
+    Use this function to return the Ranker object to evaluate, 
     The parameter to this function, cfg_file, is the path to a
-    configuration file used to load the index. You can ignore this for MP2.
+    configuration file used to load the index.
     """
-    # return metapy.index.JelinekMercer()
-    # return metapy.index.OkapiBM25(k1=1.2,b=0.75,k3=500)
-    return InL2Ranker(some_param=1.0)
+    return metapy.index.OkapiBM25(k1=2.255,b=0.75,k3=1.0)
+    
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -64,12 +40,17 @@ if __name__ == '__main__':
     query_start = query_cfg.get('query-id-start', 0)
 
     query = metapy.index.Document()
+    ndcg = 0.0
+    num_queries = 0
+
     print('Running queries')
     with open(query_path) as query_file:
         for query_num, line in enumerate(query_file):
             query.content(line.strip())
             results = ranker.score(idx, query, top_k)
-            avg_p = ev.avg_p(results, query_start + query_num, top_k)
-            print("Query {} average precision: {}".format(query_num + 1, avg_p))
-    print("Mean average precision: {}".format(ev.map()))
+            ndcg += ev.ndcg(results, query_start + query_num, top_k)
+            num_queries+=1
+    ndcg= ndcg / num_queries
+            
+    print("NDCG@{}: {}".format(top_k, ndcg))
     print("Elapsed: {} seconds".format(round(time.time() - start_time, 4)))
