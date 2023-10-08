@@ -3,7 +3,6 @@ import sys
 import time
 import metapy
 import pytoml
-import numpy as np
 
 
 def load_ranker(cfg_file):
